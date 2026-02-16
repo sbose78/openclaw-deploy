@@ -1,0 +1,54 @@
+{
+  gateway: {
+    mode: "local",
+  },
+  channels: {
+    telegram: {
+      enabled: true,
+      dmPolicy: "allowlist",
+      allowFrom: ["your_telegram_user_id"],
+      capabilities: {
+        inlineButtons: "dm",
+      },
+    },
+  },
+  browser: {
+    enabled: true,
+    defaultProfile: "openclaw",
+    headless: false,
+    remoteCdpTimeoutMs: 500,
+    remoteCdpHandshakeTimeoutMs: 1000,
+    snapshotDefaults: {
+      mode: "efficient",
+    },
+    profiles: {
+      openclaw: {
+        cdpUrl: "http://127.0.0.1:9222",
+        color: "#FF4500",
+      },
+    },
+  },
+  agents: {
+    defaults: {
+      model: {
+        primary: "anthropic/claude-haiku-4-5",
+        fallbacks: ["anthropic/claude-sonnet-4-5"],
+      },
+      models: {
+        "anthropic/claude-sonnet-4-5": { alias: "sonnet" },
+        "anthropic/claude-haiku-4-5": { alias: "haiku" },
+      },
+      contextPruning: {
+        mode: "cache-ttl",
+        ttl: "5m",
+        keepLastAssistants: 2,
+        softTrim: { maxChars: 2000, headChars: 800, tailChars: 800 },
+        hardClear: { enabled: true },
+        tools: { deny: [] },
+      },
+      sandbox: {
+        mode: "off",
+      },
+    },
+  },
+}
