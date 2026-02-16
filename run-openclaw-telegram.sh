@@ -12,6 +12,7 @@
 #   ./run-openclaw-telegram.sh setup       # Run onboarding wizard
 #   ./run-openclaw-telegram.sh pairing     # List pending Telegram pairings
 #   ./run-openclaw-telegram.sh approve <CODE>  # Approve a Telegram pairing code
+#   ./run-openclaw-telegram.sh sync-skills  # Pull latest skills from GitLab
 #   ./run-openclaw-telegram.sh exec <args> # Run openclaw CLI inside the gateway
 #   ./run-openclaw-telegram.sh shell       # Open a shell in the gateway container
 
@@ -30,6 +31,8 @@ BR_IMAGE="${OPENCLAW_BR_IMAGE:-openclaw-browser:local}"
 CONFIG_DIR="${OPENCLAW_CONFIG_DIR:-${HOME}/.openclaw}"
 WORKSPACE_DIR="${OPENCLAW_WORKSPACE_DIR:-${CONFIG_DIR}/workspace}"
 BROWSER_DATA_DIR="${OPENCLAW_BROWSER_DATA_DIR:-${CONFIG_DIR}/browser-data}"
+SKILLS_DIR="${OPENCLAW_SKILLS_DIR:-${WORKSPACE_DIR}/skills}"
+SKILLS_GIT_REPO="${OPENCLAW_SKILLS_REPO:-git@gitlab.com:sbose78/openclaw-skills.git}"
 ENV_FILE="${OPENCLAW_ENV_FILE:-${CONFIG_DIR}/.env}"
 
 HOST_GATEWAY_PORT="${OPENCLAW_GATEWAY_PORT:-18789}"
@@ -66,6 +69,22 @@ load_env() {
   fi
 }
 
+sync_skills() {
+  if [[ -z "$SKILLS_GIT_REPO" ]]; then
+    info "No OPENCLAW_SKILLS_REPO set, skipping skills sync."
+    return
+  fi
+
+  if [[ -d "$SKILLS_DIR/.git" ]]; then
+    info "Pulling latest skills from $SKILLS_GIT_REPO..."
+    git -C "$SKILLS_DIR" pull --ff-only || warn "Skills pull failed — using existing copy."
+  else
+    info "Cloning skills from $SKILLS_GIT_REPO..."
+    mkdir -p "$(dirname "$SKILLS_DIR")"
+    git clone "$SKILLS_GIT_REPO" "$SKILLS_DIR" || warn "Skills clone failed — continuing without skills."
+  fi
+}
+
 # ---------------------------------------------------------------------------
 # Pod lifecycle
 # ---------------------------------------------------------------------------
@@ -87,6 +106,7 @@ do_start() {
   require_cmd podman
   ensure_dirs
   load_env
+  sync_skills
 
   if pod_exists; then
     warn "Pod $POD_NAME already exists. Use 'restart' or 'stop' first."
@@ -265,6 +285,10 @@ case "${1:-help}" in
   logs-browser)
     do_logs "$BR_CONTAINER"
     ;;
+  sync-skills)
+    ensure_dirs
+    sync_skills
+    ;;
   setup)
     do_setup
     ;;
@@ -294,6 +318,7 @@ Commands:
   status         Show pod and container status
   logs           Tail gateway logs
   logs-browser   Tail browser sidecar logs
+  sync-skills    Pull latest skills from Git (runs automatically on start)
   setup          Run onboarding wizard (interactive)
   pairing        List pending Telegram pairing codes
   approve <CODE> Approve a Telegram pairing code
@@ -305,6 +330,7 @@ Environment overrides:
   OPENCLAW_CONFIG_DIR     Config dir       (default: ~/.openclaw)
   OPENCLAW_WORKSPACE_DIR  Workspace dir    (default: ~/.openclaw/workspace)
   OPENCLAW_BROWSER_DATA_DIR  Browser data  (default: ~/.openclaw/browser-data)
+  OPENCLAW_SKILLS_REPO    Skills Git repo  (default: git@gitlab.com:sbose78/openclaw-skills.git)
   OPENCLAW_GATEWAY_PORT   Host gateway port (default: 18789)
   OPENCLAW_NOVNC_PORT     Host noVNC port   (default: 6080)
   OPENCLAW_GW_IMAGE       Gateway image     (default: openclaw-gateway:local)

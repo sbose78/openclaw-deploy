@@ -43,7 +43,7 @@ openssl rand -hex 32
 
 4. **Edit `~/.openclaw/openclaw.json`** -- replace `your_telegram_user_id` with your numeric Telegram ID.
 
-5. **Start the pod:**
+5. **Start the pod** (skills are auto-pulled from [GitLab](https://gitlab.com/sbose78/openclaw-skills) on start):
 
 ```bash
 ./run-openclaw-telegram.sh start
@@ -64,6 +64,7 @@ openssl rand -hex 32
 ./run-openclaw-telegram.sh status         # Container status
 ./run-openclaw-telegram.sh logs           # Gateway logs (live)
 ./run-openclaw-telegram.sh logs-browser   # Browser logs (live)
+./run-openclaw-telegram.sh sync-skills    # Pull latest skills from GitLab
 ./run-openclaw-telegram.sh approve <CODE> # Approve Telegram pairing
 ./run-openclaw-telegram.sh shell          # Shell into gateway
 ```
@@ -92,4 +93,5 @@ openssl rand -hex 32
 
 - noVNC is bound to `0.0.0.0:6080` -- accessible from any device on your LAN. No auth. Use on trusted networks only.
 - Gateway dashboard requires the gateway token from `.env` on first connect.
-- Skills in `~/.openclaw/workspace/skills/` persist across restarts and can be created by the agent via Telegram.
+- Skills are auto-pulled from Git on `start`. Update them independently: `./run-openclaw-telegram.sh sync-skills`
+- Override the skills repo: `OPENCLAW_SKILLS_REPO=git@gitlab.com:you/your-skills.git ./run-openclaw-telegram.sh start`
